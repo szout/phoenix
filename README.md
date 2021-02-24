@@ -3,6 +3,7 @@
 This contracts interface supports Substrate 2.0+ with contracts using Ink! 3.0+ & EVM.
 
 include pallet list:
+```bash
    pallet_timestamp
    pallet_balances
    pallet_sudo
@@ -16,6 +17,7 @@ include pallet list:
    pallet_contracts
    pallet_scheduler
    pallet_democracy
+```
 
 ## Build & Run
 
