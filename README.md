@@ -2,7 +2,7 @@
   Phoenix Paranchain base in rococo-v1, buildin contracts supports. 
 This contracts interface supports Substrate 2.0+ with contracts using Ink! 3.0+ & EVM.
 
-include pallet list:
+include pallets list:
 ```bash
    pallet_timestamp
    pallet_balances
