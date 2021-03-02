@@ -54,7 +54,7 @@ pub use pallet_balances::Call as BalancesCall;
 pub use sp_runtime::{Permill, Perbill};
 pub use frame_support::{
 	construct_runtime, parameter_types, StorageValue,
-	traits::{KeyOwnerProofSystem, Randomness,FindAuthor},
+	traits::{KeyOwnerProofSystem, Randomness,FindAuthor,LockIdentifier,U128CurrencyToVote},
 	weights::{
 		Weight, IdentityFee, DispatchClass,
 		constants::{BlockExecutionWeight, ExtrinsicBaseWeight, RocksDbWeight, WEIGHT_PER_SECOND},
@@ -284,14 +284,14 @@ parameter_types! {
 }
 
 impl pallet_scheduler::Config for Runtime {
-    type Event = Event;
-    type Origin = Origin;
-    type PalletsOrigin = OriginCaller;
-    type Call = Call;
-    type MaximumWeight = MaximumSchedulerWeight;
-    type ScheduleOrigin = EnsureRoot<AccountId>;
-    type MaxScheduledPerBlock = MaxScheduledPerBlock;
-    type WeightInfo = ();
+        type Event = Event;
+        type Origin = Origin;
+        type PalletsOrigin = OriginCaller;
+        type Call = Call;
+        type MaximumWeight = MaximumSchedulerWeight;
+        type ScheduleOrigin = EnsureRoot<AccountId>;
+        type MaxScheduledPerBlock = MaxScheduledPerBlock;
+        type WeightInfo = ();
 }
 
 parameter_types! {
@@ -336,6 +336,34 @@ impl pallet_democracy::Config for Runtime {
 	type PalletsOrigin = OriginCaller;
 	type WeightInfo = ();
 	type MaxProposals = MaxProposals;
+}
+
+parameter_types! {
+	pub const CandidacyBond: Balance = 10 * 100;
+	pub const VotingBondBase: Balance = 1 * 100;
+	pub const VotingBondFactor: Balance = 10 * 1;
+	pub const TermDuration: BlockNumber = 7 * DAYS;
+	pub const DesiredMembers: u32 = 7;
+	pub const DesiredRunnersUp: u32 = 7;
+	pub const ElectionsPhragmenModuleId: LockIdentifier = *b"phrelect";
+}
+
+impl pallet_elections_phragmen::Config for Runtime {
+	type Event = Event;
+	type ModuleId = ElectionsPhragmenModuleId;
+	type Currency = Balances;
+	type ChangeMembers = ();
+	type InitializeMembers = ();
+	type CurrencyToVote = U128CurrencyToVote;
+	type CandidacyBond = CandidacyBond;
+	type VotingBondBase = VotingBondBase;
+	type VotingBondFactor = VotingBondFactor;
+	type LoserCandidate = ();
+	type KickedMember = ();
+	type DesiredMembers = DesiredMembers;
+	type DesiredRunnersUp = DesiredRunnersUp;
+	type TermDuration = TermDuration;
+	type WeightInfo = pallet_elections_phragmen::weights::SubstrateWeight<Runtime>;
 }
 
 impl pallet_sudo::Config for Runtime {
@@ -555,6 +583,7 @@ construct_runtime!(
                 Contracts: pallet_contracts::{Module, Call, Config<T>, Storage, Event<T>},
                 Scheduler: pallet_scheduler::{Module, Storage, Config, Event<T>, Call},
                 Democracy: pallet_democracy::{Module, Storage, Config, Event<T>, Call},
+                Elections: pallet_elections_phragmen::{Module, Call, Storage, Event<T>, Config<T>},
 	}
 );
 
@@ -685,7 +714,7 @@ impl_runtime_apis! {
 		}
 	}
 
-impl fp_rpc::EthereumRuntimeRPCApi<Block> for Runtime {
+        impl fp_rpc::EthereumRuntimeRPCApi<Block> for Runtime {
 		fn chain_id() -> u64 {
 			<Runtime as pallet_evm::Config>::ChainId::get()
 		}
@@ -795,43 +824,32 @@ impl fp_rpc::EthereumRuntimeRPCApi<Block> for Runtime {
 		}
 	}
 
-        /*
         impl pallet_contracts_rpc_runtime_api::ContractsApi<Block, AccountId, Balance, BlockNumber>
-          for Runtime
-        {
-          fn call(
-            origin: AccountId,
-            dest: AccountId,
-            value: Balance,
-            gas_limit: u64,
-            input_data: Vec<u8>,
-          ) -> ContractExecResult {
-            let (exec_result, gas_consumed) =
-                Contracts::bare_call(origin, dest.into(), value, gas_limit, input_data);
-            match exec_result {
-                Ok(v) => ContractExecResult::Success {
-                    flags: v.flags.bits(),
-                    data: v.data,
-                    gas_consumed: gas_consumed,
-                },
-                Err(_) => ContractExecResult::Error,
-            }
-          }
+		for Runtime
+	{
+		fn call(
+			origin: AccountId,
+			dest: AccountId,
+			value: Balance,
+			gas_limit: u64,
+			input_data: Vec<u8>,
+		) -> pallet_contracts_primitives::ContractExecResult {
+			Contracts::bare_call(origin, dest, value, gas_limit, input_data)
+		}
 
-          fn get_storage(
-            address: AccountId,
-            key: [u8; 32],
-          ) -> pallet_contracts_primitives::GetStorageResult {
-            Contracts::get_storage(address, key)
-          }
+		fn get_storage(
+			address: AccountId,
+			key: [u8; 32],
+		) -> pallet_contracts_primitives::GetStorageResult {
+			Contracts::get_storage(address, key)
+		}
 
-          fn rent_projection(
-            address: AccountId,
-          ) -> pallet_contracts_primitives::RentProjectionResult<BlockNumber> {
-            Contracts::rent_projection(address)
-          }
-        }
-        */
+		fn rent_projection(
+			address: AccountId,
+		) -> pallet_contracts_primitives::RentProjectionResult<BlockNumber> {
+			Contracts::rent_projection(address)
+		}
+	}
 
 	#[cfg(feature = "runtime-benchmarks")]
 	impl frame_benchmarking::Benchmark<Block> for Runtime {

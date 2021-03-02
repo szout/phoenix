@@ -7,6 +7,7 @@ serde = { version = "1.0.119", features = ["derive"] }
 hex-literal = "0.2.1"
 # RPC related dependencies
 jsonrpc-core = "15.1.0"
+jsonrpc-pubsub = "15.0.0"
 
 [dependencies.frame-benchmarking]
 git = 'https://github.com/paritytech/substrate.git'
@@ -100,6 +101,11 @@ git = 'https://github.com/paritytech/substrate.git'
 branch = 'polkadot-v0.8.28'
 version = '2.0.0'
 
+[dependencies.sc-network]
+git = 'https://github.com/paritytech/substrate.git'
+branch = 'polkadot-v0.8.28'
+version = '0.8.1'
+
 [dependencies.sp-api]
 git = 'https://github.com/paritytech/substrate.git'
 branch = 'polkadot-v0.8.28'
@@ -178,7 +184,32 @@ path = '../pallets/cumulus/service'
 
 #Frontier dependencies
 [dependencies.pallet-evm]
+default-features = false
 path = '../pallets/frontier/frame/evm'
+
+[dependencies.pallet-ethereum]
+default-features = false
+path = '../pallets/frontier/frame/ethereum'
+
+[dependencies.fp-rpc]
+default-features = false
+path = '../pallets/frontier/primitives/rpc'
+
+[dependencies.fp-consensus]
+default-features = false
+path = '../pallets/frontier/primitives/consensus'
+
+[dependencies.fc-rpc]
+default-features = false
+path = '../pallets/frontier/client/rpc'
+
+[dependencies.fc-rpc-core]
+default-features = false
+path = '../pallets/frontier/client/rpc-core'
+
+[dependencies.fc-consensus]
+default-features = false
+path = '../pallets/frontier/client/consensus'
 
 # Polkadot dependencies
 [dependencies.polkadot-primitives]

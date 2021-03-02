@@ -7,10 +7,15 @@ use polkadot_primitives::v0::CollatorPair;
 use sc_executor::native_executor_instance;
 pub use sc_executor::NativeExecutor;
 use sc_service::{Configuration, PartialComponents, Role, TFullBackend, TFullClient, TaskManager};
+use fc_consensus::FrontierBlockImport;
+use fc_rpc_core::types::PendingTransactions;
 use sp_core::Pair;
 use sp_runtime::traits::BlakeTwo256;
 use sp_trie::PrefixedMemoryDB;
-use std::sync::Arc;
+use std::{
+	collections::HashMap,
+	sync::{Arc, Mutex},
+};
 
 // Native executor instance.
 native_executor_instance!(
@@ -18,6 +23,8 @@ native_executor_instance!(
 	parachain_runtime::api::dispatch,
 	parachain_runtime::native_version,
 );
+
+type FullClient = TFullClient<Block, RuntimeApi, Executor>;
 
 /// Starts a `ServiceBuilder` for a full service.
 ///
@@ -32,7 +39,11 @@ pub fn new_partial(
 		(),
 		sp_consensus::import_queue::BasicQueue<Block, PrefixedMemoryDB<BlakeTwo256>>,
 		sc_transaction_pool::FullPool<Block, TFullClient<Block, RuntimeApi, Executor>>,
-		Option<sc_telemetry::TelemetrySpan>,
+                (
+		    Option<sc_telemetry::TelemetrySpan>,
+                    FrontierBlockImport<Block, Arc<FullClient>, FullClient>,
+                    PendingTransactions,
+                )
 	>,
 	sc_service::Error,
 > {
@@ -52,13 +63,16 @@ pub fn new_partial(
 		client.clone(),
 	);
 
+        let frontier_block_import = FrontierBlockImport::new(client.clone(), client.clone(), true);
 	let import_queue = cumulus_consensus::import_queue::import_queue(
 		client.clone(),
-		client.clone(),
+                frontier_block_import.clone(),
 		inherent_data_providers.clone(),
 		&task_manager.spawn_handle(),
 		registry.clone(),
 	)?;
+
+        let pending_transactions: PendingTransactions = Some(Arc::new(Mutex::new(HashMap::new())));
 
 	let params = PartialComponents {
 		backend,
@@ -69,7 +83,7 @@ pub fn new_partial(
 		transaction_pool,
 		inherent_data_providers,
 		select_chain: (),
-		other: telemetry_span,
+		other: (telemetry_span,frontier_block_import,pending_transactions),
 	};
 
 	Ok(params)
@@ -84,8 +98,8 @@ async fn start_node_impl<RB>(
 	collator_key: CollatorPair,
 	polkadot_config: Configuration,
 	id: polkadot_primitives::v0::Id,
-	validator: bool,
-	rpc_ext_builder: RB,
+	collator: bool,
+	_rpc_ext_builder: RB,
 ) -> sc_service::error::Result<(TaskManager, Arc<TFullClient<Block, RuntimeApi, Executor>>)>
 where
 	RB: Fn(
@@ -109,7 +123,7 @@ where
 		)?;
 
 	let params = new_partial(&parachain_config)?;
-	let telemetry_span = params.other;
+	let (telemetry_span,block_import,pending_transactions) = params.other;
 	params
 		.inherent_data_providers
 		.register_provider(sp_timestamp::InherentDataProvider)
@@ -123,6 +137,7 @@ where
 		Box::new(polkadot_full_node.network.clone()),
 		polkadot_full_node.backend.clone(),
 	);
+
 
 	let prometheus_registry = parachain_config.prometheus_registry().cloned();
 	let transaction_pool = params.transaction_pool.clone();
@@ -139,8 +154,28 @@ where
 			block_announce_validator_builder: Some(Box::new(|_| block_announce_validator)),
 		})?;
 
-	let rpc_client = client.clone();
-	let rpc_extensions_builder = Box::new(move |_, _| rpc_ext_builder(rpc_client.clone()));
+	let subscription_task_executor =
+		sc_rpc::SubscriptionTaskExecutor::new(task_manager.spawn_handle());
+	//let rpc_client = client.clone();
+	//let rpc_extensions_builder = Box::new(move |_, _| rpc_ext_builder(rpc_client.clone()));
+        let rpc_extensions_builder = {
+		let client = client.clone();
+		let pool = transaction_pool.clone();
+		let network = network.clone();
+		let pending = pending_transactions.clone();
+		Box::new(move |deny_unsafe, _| {
+			let deps = crate::rpc::FullDeps {
+				client: client.clone(),
+				pool: pool.clone(),
+				deny_unsafe,
+				is_authority: collator,
+				network: network.clone(),
+				pending_transactions: pending.clone(),
+			};
+
+			crate::rpc::create_full(deps, subscription_task_executor.clone())
+		})
+	};
 
 	sc_service::spawn_tasks(sc_service::SpawnTasksParams {
 		on_demand: None,
@@ -163,7 +198,7 @@ where
 		Arc::new(move |hash, data| network.announce_block(hash, Some(data)))
 	};
 
-	if validator {
+	if collator {
 		let proposer_factory = sc_basic_authorship::ProposerFactory::new(
 			task_manager.spawn_handle(),
 			client.clone(),
@@ -176,7 +211,8 @@ where
 
 		let params = StartCollatorParams {
 			para_id: id,
-			block_import: client.clone(),
+			//block_import: client.clone(),
+			block_import,
 			proposer_factory,
 			inherent_data_providers: params.inherent_data_providers,
 			block_status: client.clone(),
@@ -214,14 +250,14 @@ pub async fn start_node(
 	collator_key: CollatorPair,
 	polkadot_config: Configuration,
 	id: polkadot_primitives::v0::Id,
-	validator: bool,
+	collator: bool,
 ) -> sc_service::error::Result<(TaskManager, Arc<TFullClient<Block, RuntimeApi, Executor>>)> {
 	start_node_impl(
 		parachain_config,
 		collator_key,
 		polkadot_config,
 		id,
-		validator,
+		collator,
 		|_| Default::default(),
 	)
 	.await

@@ -6,7 +6,7 @@ use sp_core::{sr25519, Pair, Public};
 use sp_runtime::traits::{IdentifyAccount, Verify};
 use parachain_runtime::{
         AccountId, Signature, EVMConfig, ContractsConfig,
-        SchedulerConfig, DemocracyConfig ,EthereumConfig
+        SchedulerConfig, DemocracyConfig ,EthereumConfig,ElectionsConfig
 };
 
 /// Specialized `ChainSpec` for the normal parachain runtime.
@@ -80,6 +80,7 @@ pub fn development_config(id: ParaId) -> ChainSpec {
 
 pub fn local_testnet_config(id: ParaId) -> ChainSpec {
         let mut properties = Properties::new();
+        properties.insert("ss58Format".into(), "42".into());
         properties.insert("tokenSymbol".into(), "PNX".into());
         properties.insert("tokenDecimals".into(), 12.into());
 
@@ -126,6 +127,9 @@ fn testnet_genesis(
         //modified by wd 2021.2.20
         acc: std::collections::BTreeMap<sp_core::H160, pallet_evm::GenesisAccount>,
 ) -> parachain_runtime::GenesisConfig {
+        const STASH: u128 = 20_000;
+	let num_endowed_accounts = endowed_accounts.len();
+
 	parachain_runtime::GenesisConfig {
 		frame_system: Some(parachain_runtime::SystemConfig {
 			code: parachain_runtime::WASM_BINARY
@@ -142,6 +146,7 @@ fn testnet_genesis(
 		}),
 		pallet_sudo: Some(parachain_runtime::SudoConfig { key: root_key }),
 		parachain_info: Some(parachain_runtime::ParachainInfoConfig { parachain_id: id }),
+
                 pallet_contracts: Some(ContractsConfig {
                     current_schedule: pallet_contracts::Schedule {
                     ..Default::default()
@@ -150,11 +155,17 @@ fn testnet_genesis(
                 pallet_scheduler: Some(SchedulerConfig {}),
                 pallet_democracy: Some(DemocracyConfig {}),
                 pallet_ethereum: Some(EthereumConfig {}),
-
-		//modified by wd 2021.2.20
                 pallet_evm: Some(EVMConfig {
                         accounts: acc
                 }),
+
+		pallet_elections_phragmen: Some(ElectionsConfig {
+			members: endowed_accounts.iter()
+						.take((num_endowed_accounts + 1) / 2)
+						.cloned()
+						.map(|member| (member, STASH))
+						.collect(),
+		}),
 
 	}
 }

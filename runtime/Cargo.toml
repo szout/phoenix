@@ -129,6 +129,12 @@ git = 'https://github.com/paritytech/substrate.git'
 branch = 'polkadot-v0.8.28'
 version = '2.0.0'
 
+[dependencies.pallet-elections-phragmen]
+default-features = false
+git = 'https://github.com/paritytech/substrate.git'
+branch = 'polkadot-v0.8.28'
+#version = '2.0.0'
+
 [dependencies.serde]
 features = ['derive']
 optional = true
@@ -296,6 +302,7 @@ std = [
         "pallet-contracts/std",
         "pallet-contracts-primitives/std",
         "pallet-contracts-rpc-runtime-api/std",
+        "pallet-elections-phragmen/std",
 	"parachain-info/std",
 	"cumulus-runtime/std",
 	"cumulus-parachain-system/std",
