@@ -39,10 +39,9 @@ use xcm_executor::{
 use frame_system::limits::{BlockLength, BlockWeights};
 use frame_system::{EnsureNever, EnsureRoot, EnsureSigned};
 
-//modified by wd 2021.2.20
 use pallet_evm::
 {
-        EnsureAddressNever, EnsureAddressTruncated, AddressMapping as tAddressMapping,
+        EnsureAddressNever, EnsureAddressTruncated, HashedAddressMapping,
         Account as EVMAccount, FeeCalculator, Runner
 };
 
@@ -469,22 +468,6 @@ impl pallet_contracts::Config for Runtime {
         type DeletionWeightLimit = DeletionWeightLimit;
 }
 
-//modified by wd 2021.2.20
-pub struct ConcatAddressMapping;
-
-impl tAddressMapping<AccountId> for ConcatAddressMapping {
-        fn into_account_id(address: H160) -> AccountId {
-                let mut data = [0u8; 32];
-                data[0..4].copy_from_slice(b"evm:");
-                data[11..31].copy_from_slice(&address[..]);
-                let checksum: u8 = data[1..31].iter().fold(data[0], |sum, &byte| {
-                        sum ^ byte
-                });
-                data[31] = checksum;
-                AccountId::from(data)
-        }
-}
-
 parameter_types! {
         pub const ChainId: u64 = 42;
 }
@@ -493,7 +476,7 @@ impl pallet_evm::Config for Runtime {
     type FeeCalculator = ();
     type CallOrigin = EnsureAddressTruncated;
     type WithdrawOrigin = EnsureAddressNever<Self::AccountId>;
-    type AddressMapping = ConcatAddressMapping;
+    type AddressMapping = HashedAddressMapping<BlakeTwo256>;
     type Currency = Balances;
     type Event = Event;
     type Precompiles = ();
@@ -501,7 +484,6 @@ impl pallet_evm::Config for Runtime {
     type GasWeightMapping = ();
     type Runner = pallet_evm::runner::stack::Runner<Self>;
 }
-//wd end
 
 pub struct TransactionConverter;
 impl fp_rpc::ConvertTransaction<UncheckedExtrinsic> for TransactionConverter {

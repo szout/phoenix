@@ -2,12 +2,14 @@ use cumulus_primitives::ParaId;
 use sc_chain_spec::{ChainSpecExtension, ChainSpecGroup, Properties};
 use sc_service::ChainType;
 use serde::{Deserialize, Serialize};
-use sp_core::{sr25519, Pair, Public};
+use sp_core::{Pair, Public, sr25519, H160, U256};
 use sp_runtime::traits::{IdentifyAccount, Verify};
 use parachain_runtime::{
         AccountId, Signature, EVMConfig, ContractsConfig,
         SchedulerConfig, DemocracyConfig ,EthereumConfig,ElectionsConfig
 };
+use std::collections::BTreeMap;
+use std::str::FromStr;
 
 /// Specialized `ChainSpec` for the normal parachain runtime.
 pub type ChainSpec = sc_service::GenericChainSpec<parachain_runtime::GenesisConfig, Extensions>;
@@ -64,7 +66,6 @@ pub fn development_config(id: ParaId) -> ChainSpec {
 					get_account_id_from_seed::<sr25519::Public>("Bob//stash"),
 				],
 				id,
-                                std::collections::BTreeMap::new(),  //modified by wd 2021.2.22
 			)
 		},
 		vec![],
@@ -106,7 +107,6 @@ pub fn local_testnet_config(id: ParaId) -> ChainSpec {
 					get_account_id_from_seed::<sr25519::Public>("Ferdie//stash"),
 				],
 				id,
-                                std::collections::BTreeMap::new(), //modified by wd 2021.2.22
 			)
 		},
                 vec![], // Bootnodes
@@ -124,11 +124,21 @@ fn testnet_genesis(
 	root_key: AccountId,
 	endowed_accounts: Vec<AccountId>,
 	id: ParaId,
-        //modified by wd 2021.2.20
-        acc: std::collections::BTreeMap<sp_core::H160, pallet_evm::GenesisAccount>,
 ) -> parachain_runtime::GenesisConfig {
         const STASH: u128 = 20_000;
 	let num_endowed_accounts = endowed_accounts.len();
+        
+	let gerald_evm_account_id = H160::from_str("6be02d1d3665660d22ff9624b7be0551ee1ac91b").unwrap();
+	let mut evm_accounts = BTreeMap::new();
+	evm_accounts.insert(
+		gerald_evm_account_id,
+		pallet_evm::GenesisAccount {
+			nonce: 0.into(),
+			balance: U256::from(123456_123_000_000_000_000_000u128),
+			storage: BTreeMap::new(),
+			code: vec![],
+		},
+	);
 
 	parachain_runtime::GenesisConfig {
 		frame_system: Some(parachain_runtime::SystemConfig {
@@ -156,7 +166,7 @@ fn testnet_genesis(
                 pallet_democracy: Some(DemocracyConfig {}),
                 pallet_ethereum: Some(EthereumConfig {}),
                 pallet_evm: Some(EVMConfig {
-                        accounts: acc
+                        accounts: evm_accounts,
                 }),
 
 		pallet_elections_phragmen: Some(ElectionsConfig {
