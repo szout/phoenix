@@ -1,0 +1,43 @@
+[package]
+name = "pallet-bridge"
+version = "2.0.1"
+authors = ["Parity Technologies <admin@parity.io>"]
+edition = "2018"
+license = "Unlicense"
+homepage = "https://substrate.dev"
+repository = "https://github.com/paritytech/substrate/"
+description = "FRAME example pallet for offchain worker"
+readme = "README.md"
+
+[package.metadata.docs.rs]
+targets = ["x86_64-unknown-linux-gnu"]
+
+[dependencies]
+codec = { package = "parity-scale-codec", version = "2.0.0", default-features = false }
+serde = { version = "1.0.101", optional = true }
+lite-json = { version = "0.1", default-features = false }
+log = { version = "0.4.14", default-features = false }
+
+frame-support = { version = "3.0.0", default-features = false, git = "https://github.com/paritytech/substrate.git",branch = "rococo-v1"}
+frame-system = { version = "3.0.0", default-features = false, git = "https://github.com/paritytech/substrate.git",branch = "rococo-v1" }
+sp-core = { version = "3.0.0", default-features = false, git = "https://github.com/paritytech/substrate.git",branch = "rococo-v1" }
+sp-keystore = { version = "0.9.0", git = "https://github.com/paritytech/substrate.git", optional = true,branch = "rococo-v1" }
+sp-io = { version = "3.0.0", default-features = false, git = "https://github.com/paritytech/substrate.git",branch = "rococo-v1" }
+sp-runtime = { version = "3.0.0", default-features = false, git = "https://github.com/paritytech/substrate.git",branch = "rococo-v1" }
+sp-std = { version = "3.0.0", default-features = false, git = "https://github.com/paritytech/substrate.git",branch = "rococo-v1" }
+
+[features]
+default = ["std"]
+std = [
+	"codec/std",
+	"frame-support/std",
+	"frame-system/std",
+	"serde",
+	"lite-json/std",
+	"sp-core/std",
+	"sp-io/std",
+	"sp-keystore",
+	"sp-runtime/std",
+	"sp-std/std",
+	"log/std",
+]

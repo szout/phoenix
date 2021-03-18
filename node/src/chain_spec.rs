@@ -1,13 +1,10 @@
-use cumulus_primitives::ParaId;
+use cumulus_primitives_core::ParaId;
 use sc_chain_spec::{ChainSpecExtension, ChainSpecGroup, Properties};
 use sc_service::ChainType;
 use serde::{Deserialize, Serialize};
-use sp_core::{Pair, Public, sr25519, H160, U256};
+use sp_core::{Pair, Public, sr25519, H160, U256 };
+use parachain_runtime::{AccountId, Signature, SchedulerConfig, DemocracyConfig, EVMConfig, EthereumConfig, ContractsConfig};
 use sp_runtime::traits::{IdentifyAccount, Verify};
-use parachain_runtime::{
-        AccountId, Signature, EVMConfig, ContractsConfig,
-        SchedulerConfig, DemocracyConfig ,EthereumConfig,ElectionsConfig
-};
 use std::collections::BTreeMap;
 use std::str::FromStr;
 
@@ -57,7 +54,6 @@ pub fn development_config(id: ParaId) -> ChainSpec {
 		ChainType::Local,
 		move || {
 			testnet_genesis(
-                                // Sudo account
 				get_account_id_from_seed::<sr25519::Public>("Alice"),
 				vec![
 					get_account_id_from_seed::<sr25519::Public>("Alice"),
@@ -85,9 +81,11 @@ pub fn local_testnet_config(id: ParaId) -> ChainSpec {
         properties.insert("tokenSymbol".into(), "PNX".into());
         properties.insert("tokenDecimals".into(), 12.into());
 
-        ChainSpec::from_genesis(
-                "phoenix", // Name
-                "phoenix", // ID
+	ChainSpec::from_genesis(
+		// Name
+		"phoenix",
+		// ID
+		"phoenix",
 		ChainType::Local,
 		move || {
 			testnet_genesis(
@@ -125,57 +123,48 @@ fn testnet_genesis(
 	endowed_accounts: Vec<AccountId>,
 	id: ParaId,
 ) -> parachain_runtime::GenesisConfig {
-        const STASH: u128 = 20_000;
-	let num_endowed_accounts = endowed_accounts.len();
-        
-	let gerald_evm_account_id = H160::from_str("6be02d1d3665660d22ff9624b7be0551ee1ac91b").unwrap();
-	let mut evm_accounts = BTreeMap::new();
-	evm_accounts.insert(
-		gerald_evm_account_id,
-		pallet_evm::GenesisAccount {
-			nonce: 0.into(),
-			balance: U256::from(123456_123_000_000_000_000_000u128),
-			storage: BTreeMap::new(),
-			code: vec![],
-		},
-	);
+
+        let gerald_evm_account_id = H160::from_str("6be02d1d3665660d22ff9624b7be0551ee1ac91b").unwrap();
+        let mut evm_accounts = BTreeMap::new();
+        evm_accounts.insert(
+                gerald_evm_account_id,
+                pallet_evm::GenesisAccount {
+                        nonce: 0.into(),
+                        balance: U256::from(123456_123_000_000_000_000_000u128),
+                        storage: BTreeMap::new(),
+                        code: vec![],
+                },
+        );
 
 	parachain_runtime::GenesisConfig {
-		frame_system: Some(parachain_runtime::SystemConfig {
+		frame_system: parachain_runtime::SystemConfig {
 			code: parachain_runtime::WASM_BINARY
 				.expect("WASM binary was not build, please build it!")
 				.to_vec(),
 			changes_trie_config: Default::default(),
-		}),
-		pallet_balances: Some(parachain_runtime::BalancesConfig {
+		},
+		pallet_balances: parachain_runtime::BalancesConfig {
 			balances: endowed_accounts
 				.iter()
 				.cloned()
 				.map(|k| (k, 1 << 60))
 				.collect(),
-		}),
-		pallet_sudo: Some(parachain_runtime::SudoConfig { key: root_key }),
-		parachain_info: Some(parachain_runtime::ParachainInfoConfig { parachain_id: id }),
+		},
+		pallet_sudo: parachain_runtime::SudoConfig { key: root_key },
+		parachain_info: parachain_runtime::ParachainInfoConfig { parachain_id: id },
 
-                pallet_contracts: Some(ContractsConfig {
+                pallet_scheduler: SchedulerConfig {},
+                pallet_democracy: DemocracyConfig {},
+
+                pallet_ethereum: EthereumConfig {},
+                pallet_evm: EVMConfig {
+                        accounts: evm_accounts,
+                },
+
+                pallet_contracts: ContractsConfig {
                     current_schedule: pallet_contracts::Schedule {
                     ..Default::default()
                     },
-                }),
-                pallet_scheduler: Some(SchedulerConfig {}),
-                pallet_democracy: Some(DemocracyConfig {}),
-                pallet_ethereum: Some(EthereumConfig {}),
-                pallet_evm: Some(EVMConfig {
-                        accounts: evm_accounts,
-                }),
-
-		pallet_elections_phragmen: Some(ElectionsConfig {
-			members: endowed_accounts.iter()
-						.take((num_endowed_accounts + 1) / 2)
-						.cloned()
-						.map(|member| (member, STASH))
-						.collect(),
-		}),
-
+                },
 	}
 }

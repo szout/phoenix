@@ -1,6 +1,6 @@
-use std::{fmt, sync::Arc};
-
-use fc_rpc_core::types::PendingTransactions;
+use std::{sync::Arc};
+use std::collections::BTreeMap;
+use fc_rpc_core::types::{PendingTransactions, FilterPool};
 use jsonrpc_pubsub::manager::SubscriptionManager;
 use parachain_runtime::{opaque::Block, AccountId, Balance, Hash, Index};
 use sc_client_api::{
@@ -16,6 +16,8 @@ use sp_block_builder::BlockBuilder;
 use sp_blockchain::{Error as BlockChainError, HeaderBackend, HeaderMetadata};
 use sp_runtime::traits::BlakeTwo256;
 use sp_transaction_pool::TransactionPool;
+use pallet_ethereum::EthereumStorageSchema;
+use fc_rpc::{StorageOverride, SchemaV1Override};
 
 /// Full client dependencies.
 pub struct FullDeps<C, P> {
@@ -31,6 +33,10 @@ pub struct FullDeps<C, P> {
 	pub network: Arc<NetworkService<Block, Hash>>,
 	/// Ethereum pending transactions.
 	pub pending_transactions: PendingTransactions,
+	/// EthFilterApi pool.
+	pub filter_pool: Option<FilterPool>,
+	/// Backend.
+	pub backend: Arc<fc_db::Backend<Block>>,
 }
 
 /// Instantiate all Full RPC extensions.
@@ -49,13 +55,14 @@ where
 	C::Api: BlockBuilder<Block>,
 	C::Api: pallet_transaction_payment_rpc::TransactionPaymentRuntimeApi<Block, Balance>,
 	C::Api: fp_rpc::EthereumRuntimeRPCApi<Block>,
-	<C::Api as sp_api::ApiErrorExt>::Error: fmt::Debug,
 	P: TransactionPool<Block = Block> + 'static,
 {
 	use fc_rpc::{
-		EthApi, EthApiServer, EthPubSubApi, EthPubSubApiServer,
-		HexEncodedIdProvider, NetApi, NetApiServer, Web3Api, Web3ApiServer,
+		EthApi, EthApiServer, EthFilterApi, EthFilterApiServer, NetApi, NetApiServer,
+		EthPubSubApi, EthPubSubApiServer, Web3Api, Web3ApiServer, EthDevSigner, EthSigner,
+		HexEncodedIdProvider,
 	};
+
 	use pallet_transaction_payment_rpc::{TransactionPayment, TransactionPaymentApi};
 	use substrate_frame_rpc_system::{FullSystem, SystemApi};
 
@@ -67,6 +74,8 @@ where
 		is_authority,
 		network,
                 pending_transactions,
+                filter_pool,
+                backend,
 	} = deps;
 
 	io.extend_with(SystemApi::to_delegate(FullSystem::new(
@@ -78,16 +87,36 @@ where
 		client.clone(),
 	)));
 
-	let signers = Vec::new();
-	io.extend_with(EthApiServer::to_delegate(EthApi::new(
+	let mut signers = Vec::new();
+	signers.push(Box::new(EthDevSigner::new()) as Box<dyn EthSigner>);
+
+	let mut overrides = BTreeMap::new();
+	overrides.insert(
+		EthereumStorageSchema::V1,
+		Box::new(SchemaV1Override::new(client.clone())) as Box<dyn StorageOverride<_> + Send + Sync>
+	);
+
+	io.extend_with( EthApiServer::to_delegate(EthApi::new(
 		client.clone(),
 		pool.clone(),
 		parachain_runtime::TransactionConverter,
 		network.clone(),
-		pending_transactions,
+		pending_transactions.clone(),
 		signers,
+		overrides,
+		backend,
 		is_authority,
 	)));
+
+        if let Some(filter_pool) = filter_pool {
+		io.extend_with(
+			EthFilterApiServer::to_delegate(EthFilterApi::new(
+				client.clone(),
+				filter_pool.clone(),
+				500 as usize, // max stored filters
+			))
+		);
+	}
 
 	io.extend_with(NetApiServer::to_delegate(NetApi::new(
 		client.clone(),
