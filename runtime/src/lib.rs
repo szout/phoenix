@@ -46,7 +46,7 @@ pub use pallet_balances::Call as BalancesCall;
 pub use sp_runtime::{Permill, Perbill};
 pub use frame_support::{
 	construct_runtime, parameter_types, StorageValue,
-	traits::{KeyOwnerProofSystem, Randomness,FindAuthor},
+	traits::{KeyOwnerProofSystem, Randomness,FindAuthor,LockIdentifier,U128CurrencyToVote},
 	weights::{
 		Weight, IdentityFee, DispatchClass,
 		constants::{BlockExecutionWeight, ExtrinsicBaseWeight, RocksDbWeight, WEIGHT_PER_SECOND},
@@ -330,7 +330,33 @@ impl pallet_contracts::Config for Runtime {
 	type MaxCodeSize = MaxCodeSize;
 }
 
+parameter_types! {
+        pub const CandidacyBond: Balance = 10 * 100;
+        pub const VotingBondBase: Balance = 1 * 100;
+        pub const VotingBondFactor: Balance = 10 * 1;
+        pub const TermDuration: BlockNumber = 7 * DAYS;
+        pub const DesiredMembers: u32 = 7;
+        pub const DesiredRunnersUp: u32 = 7;
+        pub const ElectionsPhragmenModuleId: LockIdentifier = *b"phrelect";
+}
 
+impl pallet_elections_phragmen::Config for Runtime {
+        type Event = Event;
+        type ModuleId = ElectionsPhragmenModuleId;
+        type Currency = Balances;
+        type ChangeMembers = ();
+        type InitializeMembers = ();
+        type CurrencyToVote = U128CurrencyToVote;
+        type CandidacyBond = CandidacyBond;
+        type VotingBondBase = VotingBondBase;
+        type VotingBondFactor = VotingBondFactor;
+        type LoserCandidate = ();
+        type KickedMember = ();
+        type DesiredMembers = DesiredMembers;
+        type DesiredRunnersUp = DesiredRunnersUp;
+        type TermDuration = TermDuration;
+        type WeightInfo = pallet_elections_phragmen::weights::SubstrateWeight<Runtime>;
+}
 
 parameter_types! {
         pub MaximumSchedulerWeight: Weight = Perbill::from_percent(80) * RuntimeBlockWeights::get().max_block;
@@ -641,6 +667,7 @@ construct_runtime!(
                 EVM: pallet_evm::{Module, Config, Call, Storage, Event<T>},
                 Ethereum: pallet_ethereum::{Module, Call, Storage, Event, Config, ValidateUnsigned},
                 Contracts: pallet_contracts::{Module, Call, Config<T>, Storage, Event<T>},
+                Elections: pallet_elections_phragmen::{Module, Call, Storage, Event<T>, Config<T>},
 	}
 );
 

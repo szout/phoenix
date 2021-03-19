@@ -247,12 +247,12 @@ branch = 'rococo-v1'
 name = 'phoenix-collator'
 
 [package]
-authors = ['Anonymous']
+authors = ['yigo']
 build = 'build.rs'
-description = 'A new Cumulus FRAME-based Substrate node, ready for hacking.'
+description = 'a phoenix parachain network.'
 edition = '2018'
 homepage = 'https://substrate.dev'
-license = 'Unlicense'
+license = 'GPL-v3'
 name = 'phoenix-collator'
 repository = 'https://github.com/substrate-developer-hub/substrate-parachain-template'
 version = '2.0.0'

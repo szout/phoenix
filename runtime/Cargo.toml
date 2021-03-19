@@ -4,10 +4,10 @@ branch = 'rococo-v1'
 version = '4.0.0'
 
 [package]
-authors = ['Anonymous']
+authors = ['yigo']
 edition = '2018'
 homepage = 'https://substrate.dev'
-license = 'Unlicense'
+license = 'GPL-v3'
 name = 'parachain-runtime'
 repository = 'https://github.com/substrate-developer-hub/substrate-parachain-template'
 
@@ -94,6 +94,12 @@ branch = 'rococo-v1'
 version = '3.0.0'
 
 [dependencies.pallet-transaction-payment-rpc-runtime-api]
+default-features = false
+git = 'https://github.com/paritytech/substrate.git'
+branch = 'rococo-v1'
+version = '3.0.0'
+
+[dependencies.pallet-elections-phragmen]
 default-features = false
 git = 'https://github.com/paritytech/substrate.git'
 branch = 'rococo-v1'
@@ -311,6 +317,7 @@ std = [
 	"parachain-info/std",
         "pallet-democracy/std",
         "pallet-scheduler/std",
+        "pallet-elections-phragmen/std",
         "bridge/std",
         "pallet-evm/std",
         "pallet-evm-precompile-simple/std",

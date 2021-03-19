@@ -3,7 +3,7 @@ use sc_chain_spec::{ChainSpecExtension, ChainSpecGroup, Properties};
 use sc_service::ChainType;
 use serde::{Deserialize, Serialize};
 use sp_core::{Pair, Public, sr25519, H160, U256 };
-use parachain_runtime::{AccountId, Signature, SchedulerConfig, DemocracyConfig, EVMConfig, EthereumConfig, ContractsConfig};
+use parachain_runtime::{AccountId, Signature, SchedulerConfig, DemocracyConfig, EVMConfig, EthereumConfig, ContractsConfig,ElectionsConfig};
 use sp_runtime::traits::{IdentifyAccount, Verify};
 use std::collections::BTreeMap;
 use std::str::FromStr;
@@ -123,6 +123,9 @@ fn testnet_genesis(
 	endowed_accounts: Vec<AccountId>,
 	id: ParaId,
 ) -> parachain_runtime::GenesisConfig {
+        // add by WangYi
+        const STASH: u128 = 20_000;
+        let num_endowed_accounts = endowed_accounts.len();
 
         let gerald_evm_account_id = H160::from_str("6be02d1d3665660d22ff9624b7be0551ee1ac91b").unwrap();
         let mut evm_accounts = BTreeMap::new();
@@ -165,6 +168,14 @@ fn testnet_genesis(
                     current_schedule: pallet_contracts::Schedule {
                     ..Default::default()
                     },
+                },
+
+                pallet_elections_phragmen: ElectionsConfig {
+                        members: endowed_accounts.iter()
+                                                .take((num_endowed_accounts + 1) / 2)
+                                                .cloned()
+                                                .map(|member| (member, STASH))
+                                                .collect(),
                 },
 	}
 }
