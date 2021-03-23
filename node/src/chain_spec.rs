@@ -1,9 +1,10 @@
 use cumulus_primitives_core::ParaId;
 use sc_chain_spec::{ChainSpecExtension, ChainSpecGroup, Properties};
 use sc_service::ChainType;
+use hex_literal::hex;
 use serde::{Deserialize, Serialize};
 use sp_core::{Pair, Public, sr25519, H160, U256 };
-use parachain_runtime::{AccountId, Signature, SchedulerConfig, DemocracyConfig, EVMConfig, EthereumConfig, ContractsConfig,ElectionsConfig};
+use parachain_runtime::{PNX,AccountId, Signature, SchedulerConfig, DemocracyConfig, EVMConfig, EthereumConfig, ContractsConfig,ElectionsConfig};
 use sp_runtime::traits::{IdentifyAccount, Verify};
 use std::collections::BTreeMap;
 use std::str::FromStr;
@@ -66,7 +67,7 @@ pub fn development_config(id: ParaId) -> ChainSpec {
 		},
 		vec![],
 		None,
-		None,
+                Some("pnx"),  // Protocol ID
 		None,
 		Extensions {
 			relay_chain: "rococo-dev".into(),
@@ -87,6 +88,7 @@ pub fn local_testnet_config(id: ParaId) -> ChainSpec {
 		// ID
 		"phoenix",
 		ChainType::Local,
+		//ChainType::Live,
 		move || {
 			testnet_genesis(
 				get_account_id_from_seed::<sr25519::Public>("Alice"),
@@ -103,13 +105,15 @@ pub fn local_testnet_config(id: ParaId) -> ChainSpec {
 					get_account_id_from_seed::<sr25519::Public>("Dave//stash"),
 					get_account_id_from_seed::<sr25519::Public>("Eve//stash"),
 					get_account_id_from_seed::<sr25519::Public>("Ferdie//stash"),
+                                        hex!["24e20fbe75cda2f79e9e2fc522408520b64a6adf9532cff0917dd59da114e372"].into(),
+                                        hex!["623d43e2a8b03e116b33cbaae36b36d2d30a3b0280af755228184431b9f2c930"].into(),
 				],
 				id,
 			)
 		},
                 vec![], // Bootnodes
                 None,   // Telemetry
-                Some("dot"),  // Protocol ID
+                Some("pnx"),  // Protocol ID
                 Some(properties),
                 Extensions {
                         relay_chain: "rococo-local-raw.json".into(),
@@ -124,7 +128,8 @@ fn testnet_genesis(
 	id: ParaId,
 ) -> parachain_runtime::GenesisConfig {
         // add by WangYi
-        const STASH: u128 = 20_000;
+        const STASH: u128 = 20_000 * PNX;
+        const ENDOWMENT: u128 = 1_000_000 * PNX;
         let num_endowed_accounts = endowed_accounts.len();
 
         let gerald_evm_account_id = H160::from_str("6be02d1d3665660d22ff9624b7be0551ee1ac91b").unwrap();
@@ -150,7 +155,7 @@ fn testnet_genesis(
 			balances: endowed_accounts
 				.iter()
 				.cloned()
-				.map(|k| (k, 1 << 60))
+				.map(|k| (k, ENDOWMENT))
 				.collect(),
 		},
 		pallet_sudo: parachain_runtime::SudoConfig { key: root_key },

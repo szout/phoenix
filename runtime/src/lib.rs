@@ -118,6 +118,12 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
 	transaction_version: 1,
 };
 
+// add by WangYi
+pub const PNX: Balance = 1_000_000_000_000;
+pub const DOLLARS: Balance = PNX;
+pub const CENTS: Balance = DOLLARS / 100;
+pub const MILLICENTS: Balance = DOLLARS / 1000;
+
 /// This determines the average expected block time that we are targetting.
 /// Blocks will be produced at a minimum duration defined by `SLOT_DURATION`.
 /// `SLOT_DURATION` is picked up by `pallet_timestamp` which is in turn picked
@@ -331,9 +337,9 @@ impl pallet_contracts::Config for Runtime {
 }
 
 parameter_types! {
-        pub const CandidacyBond: Balance = 10 * 100;
-        pub const VotingBondBase: Balance = 1 * 100;
-        pub const VotingBondFactor: Balance = 10 * 1;
+        pub const CandidacyBond: Balance = 10 * DOLLARS;
+        pub const VotingBondBase: Balance = 1 * DOLLARS;
+        pub const VotingBondFactor: Balance = 10 * CENTS;
         pub const TermDuration: BlockNumber = 7 * DAYS;
         pub const DesiredMembers: u32 = 7;
         pub const DesiredRunnersUp: u32 = 7;
@@ -380,21 +386,22 @@ parameter_types! {
         pub const VotingPeriod: BlockNumber = 28 * 24 * 60 * MINUTES;
         pub const FastTrackVotingPeriod: BlockNumber = 3 * 24 * 60 * MINUTES;
         pub const InstantAllowed: bool = true;
-        pub const MinimumDeposit: Balance = 100 * 100;
+        pub const MinimumDeposit: Balance = 100 * DOLLARS;
         pub const EnactmentPeriod: BlockNumber = 30 * 24 * 60 * MINUTES;
         pub const CooloffPeriod: BlockNumber = 28 * 24 * 60 * MINUTES;
-        pub const PreimageByteDeposit: Balance = 1 * 1;
+        pub const PreimageByteDeposit: Balance = 1 * CENTS;
         pub const MaxVotes: u32 = 100;
         pub const MaxProposals: u32 = 100;
         */
+
         pub const LaunchPeriod: BlockNumber = 10 * MINUTES;
         pub const VotingPeriod: BlockNumber = 10 * MINUTES;
         pub const FastTrackVotingPeriod: BlockNumber = 5 * MINUTES;
         pub const InstantAllowed: bool = true;
-        pub const MinimumDeposit: Balance = 100;
+        pub const MinimumDeposit: Balance = 100 * DOLLARS;
         pub const EnactmentPeriod: BlockNumber = 10 * MINUTES;
         pub const CooloffPeriod: BlockNumber = 10 * MINUTES;
-        pub const PreimageByteDeposit: Balance = 1 * 1;
+        pub const PreimageByteDeposit: Balance = 1 * CENTS;
         pub const MaxVotes: u32 = 100;
         pub const MaxProposals: u32 = 100;
 }
