@@ -2,7 +2,7 @@ use std::{sync::Arc};
 use std::collections::BTreeMap;
 use fc_rpc_core::types::{PendingTransactions, FilterPool};
 use jsonrpc_pubsub::manager::SubscriptionManager;
-use parachain_runtime::{opaque::Block, AccountId, Balance, Hash, Index};
+use parachain_runtime::{opaque::Block, AccountId, Balance, Hash, Index, BlockNumber};
 use sc_client_api::{
 	backend::{AuxStore, Backend, StateBackend, StorageProvider},
 	client::BlockchainEvents,
@@ -18,6 +18,8 @@ use sp_runtime::traits::BlakeTwo256;
 use sp_transaction_pool::TransactionPool;
 use pallet_ethereum::EthereumStorageSchema;
 use fc_rpc::{StorageOverride, SchemaV1Override};
+
+use pallet_contracts_rpc::{Contracts, ContractsApi};
 
 /// Full client dependencies.
 pub struct FullDeps<C, P> {
@@ -55,6 +57,7 @@ where
 	C::Api: BlockBuilder<Block>,
 	C::Api: pallet_transaction_payment_rpc::TransactionPaymentRuntimeApi<Block, Balance>,
 	C::Api: fp_rpc::EthereumRuntimeRPCApi<Block>,
+        C::Api: pallet_contracts_rpc::ContractsRuntimeApi<Block, AccountId, Balance, BlockNumber>,
 	P: TransactionPool<Block = Block> + 'static,
 {
 	use fc_rpc::{
@@ -132,5 +135,11 @@ where
 			Arc::new(subscription_task_executor),
 		),
 	)));
+
+
+        // Contracts RPC API extension
+        io.extend_with(
+                ContractsApi::to_delegate(Contracts::new(client.clone()))
+        );
 	io
 }

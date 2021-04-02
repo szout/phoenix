@@ -138,7 +138,7 @@ fn testnet_genesis(
                 gerald_evm_account_id,
                 pallet_evm::GenesisAccount {
                         nonce: 0.into(),
-                        balance: U256::from(123456_123_000_000_000_000_000u128),
+                        balance: U256::from(3_000_000_000_000_000_000u128),
                         storage: BTreeMap::new(),
                         code: vec![],
                 },
