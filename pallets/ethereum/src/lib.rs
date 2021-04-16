@@ -152,7 +152,7 @@ decl_module! {
 			ensure_none(origin)?;
 
 			ensure!(
-				fp_consensus::find_pre_log(&frame_system::Module::<T>::digest()).is_err(),
+				fp_consensus::find_pre_log(&frame_system::Pallet::<T>::digest()).is_err(),
 				Error::<T>::PreLogExists,
 			);
 
@@ -234,14 +234,14 @@ decl_module! {
 
 		fn on_finalize(_n: T::BlockNumber) {
 			<Module<T>>::store_block(
-				fp_consensus::find_pre_log(&frame_system::Module::<T>::digest()).is_err(),
+				fp_consensus::find_pre_log(&frame_system::Pallet::<T>::digest()).is_err(),
 			);
 		}
 
 		fn on_initialize(_n: T::BlockNumber) -> Weight {
 			Pending::kill();
 
-			if let Ok(log) = fp_consensus::find_pre_log(&frame_system::Module::<T>::digest()) {
+			if let Ok(log) = fp_consensus::find_pre_log(&frame_system::Pallet::<T>::digest()) {
 				let PreLog::Block(block) = log;
 
 				for transaction in block.transactions {
@@ -276,7 +276,7 @@ impl<T: Config> frame_support::unsigned::ValidateUnsigned for Module<T> {
 			let origin = Self::recover_signer(&transaction)
 				.ok_or_else(|| InvalidTransaction::Custom(TransactionValidationError::InvalidSignature as u8))?;
 
-			let account_data = pallet_evm::Module::<T>::account_basic(&origin);
+			let account_data = pallet_evm::Pallet::<T>::account_basic(&origin);
 
 			if transaction.nonce < account_data.nonce {
 				return InvalidTransaction::Stale.into();
@@ -349,13 +349,13 @@ impl<T: Config> Module<T> {
 			difficulty: U256::zero(),
 			number: U256::from(
 				UniqueSaturatedInto::<u128>::unique_saturated_into(
-					frame_system::Module::<T>::block_number()
+					frame_system::Pallet::<T>::block_number()
 				)
 			),
 			gas_limit: T::BlockGasLimit::get(),
 			gas_used: receipts.clone().into_iter().fold(U256::zero(), |acc, r| acc + r.used_gas),
 			timestamp: UniqueSaturatedInto::<u64>::unique_saturated_into(
-				pallet_timestamp::Module::<T>::get()
+				pallet_timestamp::Pallet::<T>::get()
 			),
 			extra_data: Vec::new(),
 			mix_hash: H256::default(),
@@ -373,7 +373,7 @@ impl<T: Config> Module<T> {
 				FRONTIER_ENGINE_ID,
 				PostLog::Hashes(fp_consensus::Hashes::from_block(block)).encode(),
 			);
-			frame_system::Module::<T>::deposit_log(digest.into());
+			frame_system::Pallet::<T>::deposit_log(digest.into());
 		}
 	}
 
@@ -388,7 +388,7 @@ impl<T: Config> Module<T> {
 
 	/// Get the author using the FindAuthor trait.
 	pub fn find_author() -> H160 {
-		let digest = <frame_system::Module<T>>::digest();
+		let digest = <frame_system::Pallet<T>>::digest();
 		let pre_runtime_digests = digest.logs.iter().filter_map(|d| d.as_pre_runtime());
 
 		T::FindAuthor::find_author(pre_runtime_digests).unwrap_or_default()

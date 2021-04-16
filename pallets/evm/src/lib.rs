@@ -296,7 +296,7 @@ decl_storage! {
 				// ASSUME: in one single EVM transaction, the nonce will not increase more than
 				// `u128::max_value()`.
 				for _ in 0..account.nonce.low_u128() {
-					frame_system::Module::<T>::inc_account_nonce(&account_id);
+					frame_system::Pallet::<T>::inc_account_nonce(&account_id);
 				}
 
 				T::Currency::deposit_creating(
@@ -532,7 +532,7 @@ impl<T: Config> Module<T> {
 	pub fn remove_account(address: &H160) {
 		if AccountCodes::contains_key(address) {
 			let account_id = T::AddressMapping::into_account_id(*address);
-			let _ = frame_system::Module::<T>::dec_consumers(&account_id);
+			let _ = frame_system::Pallet::<T>::dec_consumers(&account_id);
 		}
 
 		AccountCodes::remove(address);
@@ -547,7 +547,7 @@ impl<T: Config> Module<T> {
 
 		if !AccountCodes::contains_key(&address) {
 			let account_id = T::AddressMapping::into_account_id(address);
-			let _ = frame_system::Module::<T>::inc_consumers(&account_id);
+			let _ = frame_system::Pallet::<T>::inc_consumers(&account_id);
 		}
 
 		AccountCodes::insert(address, code);
@@ -557,7 +557,7 @@ impl<T: Config> Module<T> {
 	pub fn account_basic(address: &H160) -> Account {
 		let account_id = T::AddressMapping::into_account_id(*address);
 
-		let nonce = frame_system::Module::<T>::account_nonce(&account_id);
+		let nonce = frame_system::Pallet::<T>::account_nonce(&account_id);
 		let balance = T::Currency::free_balance(&account_id);
 
 		Account {
@@ -636,13 +636,15 @@ where
 			// refund to the account that paid the fees. If this fails, the
 			// account might have dropped below the existential balance. In
 			// that case we don't refund anything.
-			let refund_imbalance = C::deposit_into_existing(&account_id, refund_amount)
+			let _refund_imbalance = C::deposit_into_existing(&account_id, refund_amount)
 				.unwrap_or_else(|_| C::PositiveImbalance::zero());
 			// merge the imbalance caused by paying the fees and refunding parts of it again.
+                /*
 			let adjusted_paid = paid
-				.offset(refund_imbalance)
+				.offset(refund_imbalance);
 				.map_err(|_| Error::<T>::BalanceLow)?;
 			OU::on_unbalanced(adjusted_paid);
+                */
 		}
 		Ok(())
 	}

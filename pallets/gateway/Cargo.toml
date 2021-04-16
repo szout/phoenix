@@ -1,5 +1,5 @@
 [package]
-name = "pallet-bridge"
+name = "pallet-gateway"
 version = "2.0.1"
 authors = ["Parity Technologies <admin@parity.io>"]
 edition = "2018"

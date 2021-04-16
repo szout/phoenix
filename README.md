@@ -28,7 +28,7 @@ include pallets list:
 ```bash
 # Compile Polkadot with the real overseer feature
 git clone -b rococo-v1 https://github.com/paritytech/polkadot
-cargo build --release --features=real-overseer
+cargo build --release 
 
 # Generate a raw chain spec
 ./target/release/polkadot \

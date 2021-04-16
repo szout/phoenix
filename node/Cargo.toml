@@ -192,9 +192,9 @@ git = 'https://github.com/paritytech/substrate.git'
 branch = 'rococo-v1'
 version = '3.0.0'
 
-[dependencies.bridge]
-package = 'pallet-bridge'
-path = '../pallets/bridge'
+[dependencies.gateway]
+package = 'pallet-gateway'
+path = '../pallets/gateway'
 
 [dependencies.sp-keystore]
 git = 'https://github.com/paritytech/substrate.git'

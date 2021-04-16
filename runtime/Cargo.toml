@@ -134,6 +134,7 @@ default-features = false
 git = 'https://github.com/paritytech/substrate.git'
 branch = 'rococo-v1'
 version = '3.0.0'
+
 [dependencies.serde]
 features = ['derive']
 optional = true
@@ -211,12 +212,14 @@ default-features = false
 package = 'pallet-template'
 path = '../pallets/template'
 
-[dependencies.bridge]
+[dependencies.gateway]
 default-features = false
-package = 'pallet-bridge'
-path = '../pallets/bridge'
+package = 'pallet-gateway'
+path = '../pallets/gateway'
 
+#---------------------------------------------
 # evm & ethereum
+#---------------------------------------------
 [dependencies.pallet-evm]
 default-features = false
 package = 'pallet-evm'
@@ -236,7 +239,9 @@ path = '../pallets/ethereum'
 default-features = false
 path = '../primitives/rpc'
 
+#---------------------------------------------
 # Cumulus dependencies
+#---------------------------------------------
 [dependencies.parachain-info]
 default-features = false
 git = 'https://github.com/paritytech/cumulus.git'
@@ -253,12 +258,14 @@ git = 'https://github.com/paritytech/cumulus.git'
 branch = 'rococo-v1'
 default-features = false
 
-[dependencies.cumulus-pallet-xcm-handler]
+[dependencies.cumulus-pallet-xcm]
 git = 'https://github.com/paritytech/cumulus.git'
 branch = 'rococo-v1'
 default-features = false
 
+#---------------------------------------------
 # Polkadot dependencies
+#---------------------------------------------
 [dependencies.polkadot-parachain]
 git = "https://github.com/paritytech/polkadot"
 branch = 'rococo-v1'
@@ -318,7 +325,7 @@ std = [
         "pallet-democracy/std",
         "pallet-scheduler/std",
         "pallet-elections-phragmen/std",
-        "bridge/std",
+        "gateway/std",
         "pallet-evm/std",
         "pallet-evm-precompile-simple/std",
         "pallet-contracts/std",
@@ -329,5 +336,5 @@ std = [
 	"xcm/std",
 	"xcm-builder/std",
 	"xcm-executor/std",
-	"cumulus-pallet-xcm-handler/std",
+
 ]

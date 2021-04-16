@@ -19,6 +19,8 @@
 use std::sync::Arc;
 use std::collections::HashMap;
 use std::marker::PhantomData;
+//use async_trait::async_trait;
+
 use fp_consensus::{ensure_log, FindLogError};
 use fp_rpc::EthereumRuntimeRPCApi;
 use sc_client_api::{BlockOf, backend::AuxStore};
@@ -31,6 +33,8 @@ use sp_consensus::{
 	BlockCheckParams, ImportResult,
 };
 use sc_client_api;
+
+//use futures::future::TryFutureExt;
 
 #[derive(derive_more::Display, Debug)]
 pub enum Error {
@@ -103,6 +107,7 @@ impl<B, I, C> FrontierBlockImport<B, I, C> where
 	}
 }
 
+#[async_trait::async_trait]
 impl<B, I, C> BlockImport<B> for FrontierBlockImport<B, I, C> where
 	B: BlockT,
 	I: BlockImport<B, Transaction = sp_api::TransactionFor<C, B>> + Send + Sync,
@@ -113,15 +118,15 @@ impl<B, I, C> BlockImport<B> for FrontierBlockImport<B, I, C> where
 {
 	type Error = ConsensusError;
 	type Transaction = sp_api::TransactionFor<C, B>;
-
-	fn check_block(
+        
+	async fn check_block(
 		&mut self,
 		block: BlockCheckParams<B>,
 	) -> Result<ImportResult, Self::Error> {
-		self.inner.check_block(block).map_err(Into::into)
+		self.inner.check_block(block).await.map_err(Into::into)
 	}
 
-	fn import_block(
+	async fn import_block(
 		&mut self,
 		block: BlockImportParams<B, Self::Transaction>,
 		new_cache: HashMap<CacheKeyId, Vec<u8>>,
@@ -130,7 +135,6 @@ impl<B, I, C> BlockImport<B> for FrontierBlockImport<B, I, C> where
 		// actions are needed and mapping syncing is delegated to a separate
 		// worker.
 		ensure_log(&block.header.digest()).map_err(|e| Error::from(e))?;
-
-		self.inner.import_block(block, new_cache).map_err(Into::into)
+		self.inner.import_block(block, new_cache).await.map_err(Into::into)
 	}
 }

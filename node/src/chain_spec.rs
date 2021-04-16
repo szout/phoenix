@@ -4,7 +4,9 @@ use sc_service::ChainType;
 use hex_literal::hex;
 use serde::{Deserialize, Serialize};
 use sp_core::{Pair, Public, sr25519, H160, U256 };
-use parachain_runtime::{PNX,AccountId, Signature, SchedulerConfig, DemocracyConfig, EVMConfig, EthereumConfig, ContractsConfig,ElectionsConfig};
+use parachain_runtime::{PNX,AccountId, Signature, SchedulerConfig, 
+                        DemocracyConfig, EVMConfig, EthereumConfig, 
+                        ContractsConfig, ElectionsConfig};
 use sp_runtime::traits::{IdentifyAccount, Verify};
 use std::collections::BTreeMap;
 use std::str::FromStr;
@@ -170,9 +172,7 @@ fn testnet_genesis(
                 },
 
                 pallet_contracts: ContractsConfig {
-                    current_schedule: pallet_contracts::Schedule {
-                    ..Default::default()
-                    },
+                    current_schedule: pallet_contracts::Schedule::default(),
                 },
 
                 pallet_elections_phragmen: ElectionsConfig {
