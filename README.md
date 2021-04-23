@@ -18,7 +18,8 @@ include pallets list:
    pallet_scheduler
    pallet_democracy
    pallet_elections_phragmen 
-   offchain worker
+   offchain_worker
+   price_fetch
 ```
 
 ## Build & Run
@@ -39,19 +40,31 @@ cargo build --release
   > rococo-local-raw.json
 
 # Alice
-./target/release/polkadot \
+../polkadot/target/release/polkadot \
+  --base-path ../data/rococo-relay1 \
   --chain rococo-local-raw.json \
+  --rpc-methods Unsafe \
+  --ws-port 9944 \
+  --validator \
   --alice \
-  --tmp \
-  > relayA.out 2>&1 &
+  --port 50556 \
+  --ws-external \
+  --rpc-external \
+  --rpc-cors all \
+>../log/relayA.out 2>&1 &
+
+sleep 1
 
 # Bob
-./target/release/polkadot \
+../polkadot/target/release/polkadot \
+  --base-path ../data/rococo-relay2 \
   --chain rococo-local-raw.json \
-  --bob \
-  --tmp \
-  --port 30334 \
-  > relayB.out 2>&1 &
+  --ws-port 9943 \
+  --validator \
+   --bob \
+  --port 50555 \
+>../log/relayB.out 2>&1 &
+
 ```
 
 ### Launch the Phoenix Parachain
@@ -64,7 +77,7 @@ cargo build --release
 # Export genesis state
 ./target/release/phoenix-collator \
   export-genesis-state \
-  --parachain-id 200 \
+  --parachain-id 6806 \
   > genesis-state
 
 # Export genesis wasm
@@ -73,42 +86,24 @@ cargo build --release
   > genesis-wasm
 
 # Collator1
-./target/release/phoenix-collator \
+../phoenix/target/release/phoenix-collator \
   --collator \
-  --tmp \
-  --parachain-id 200 \
+  --base-path ../data/phoenix-c1 \
+  --parachain-id 6806 \
+  --chain phoenix-raw.json \
+  --rpc-methods Unsafe \
+  --ws-external \
+  --rpc-external \
+  --rpc-cors all \
+  --ws-port 9966 \
+  --rpc-port 9955 \
   --port 40335 \
-  --ws-port 9946 \
   -- \
   --execution wasm \
-  --chain ../polkadot/rococo-local-raw.json \
-  --port 30335 \
-  > Collator1.out 2>&1 &
+  --chain rococo-local-raw.json \
+  --port 30335
+> ../log/Collator1.out 2>&1 &
 
-# Collator2
-./target/release/phoenix-collator \ 
-  --collator \  
-  --tmp \ 
-  --parachain-id 200 \ 
-  --port 40336 \ 
-  --ws-port 9947 \ 
-  -- \ 
-  --execution wasm \ 
-  --chain ../polkadot/rococo-local-raw.json \ 
-  --port 30336 \ 
-  > Collator2.out 2>&1 &
-
-# Parachain Full Node
-./target/release/phoenix-collator \
-  --tmp \
-  --parachain-id 200 \
-  --port 40337 \
-  --ws-port 9948 \
-  -- \
-  --execution wasm \
-  --chain ../polkadot/rococo-local-raw.json \
-  --port 30337 \
-  > FullNode.out 2>&1 &
 ```
 ### Register the phoenix parachain
 ```bash
@@ -121,7 +116,7 @@ sudo
     sudoScheduleParaInitialize(id, genesis)
 
 input items:
-            id <- 200
+            id <- 6806 
    genesisHead <- genesis-state(above)
 validationCode <- genesis-wasm (above)
      parachain <- true

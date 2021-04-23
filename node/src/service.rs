@@ -105,6 +105,8 @@ pub fn new_partial(
         let keystore = keystore_container.sync_keystore();
         SyncCryptoStore::sr25519_generate_new(&*keystore, gateway::KEY_TYPE, Some("//Alice"))
                        .expect("Creating key with account Alice should succeed.");
+        SyncCryptoStore::sr25519_generate_new(&*keystore, price_fetch::KEY_TYPE, Some("//Alice"))
+                       .expect("Creating key with account Alice should succeed.");
 
 
 	let transaction_pool = sc_transaction_pool::BasicPool::new_full(

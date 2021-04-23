@@ -565,6 +565,13 @@ impl gateway::Config for Runtime {
         type UnsignedPriority = UnsignedPriority;
 }
 
+impl price_fetch::Config for Runtime {
+        type AuthorityId = price_fetch::crypto::TestAuthId;
+        type Call = Call;
+        type Event = Event;
+        type Currency = Balances;
+}
+
 impl frame_system::offchain::SigningTypes for Runtime {
         type Public = <Signature as Verify>::Signer;
         type Signature = Signature;
@@ -635,6 +642,7 @@ construct_runtime!(
 		CumulusXcm: cumulus_pallet_xcm::{Pallet, Origin},
 
 		Gateway: gateway::{Pallet, Call, Storage, Event<T>, ValidateUnsigned},
+                PriceFetch:price_fetch::{Pallet, Call, Storage, Event<T>,ValidateUnsigned},
                 Scheduler: pallet_scheduler::{Pallet, Storage, Config, Event<T>, Call},
                 Democracy: pallet_democracy::{Pallet, Storage, Config, Event<T>, Call},
                 EVM: pallet_evm::{Pallet, Config, Call, Storage, Event<T>},

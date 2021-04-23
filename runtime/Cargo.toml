@@ -217,6 +217,11 @@ default-features = false
 package = 'pallet-gateway'
 path = '../pallets/gateway'
 
+[dependencies.price-fetch]
+default-features = false
+package = 'price-fetch'
+path = '../pallets/price-fetch'
+
 #---------------------------------------------
 # evm & ethereum
 #---------------------------------------------
@@ -341,6 +346,7 @@ std = [
         "pallet-scheduler/std",
         "pallet-elections-phragmen/std",
         "gateway/std",
+        "price-fetch/std",
         "pallet-evm/std",
         "pallet-evm-precompile-simple/std",
         "pallet-contracts/std",

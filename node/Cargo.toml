@@ -196,6 +196,10 @@ version = '3.0.0'
 package = 'pallet-gateway'
 path = '../pallets/gateway'
 
+[dependencies.price-fetch]
+package = 'price-fetch'
+path = '../pallets/price-fetch'
+
 [dependencies.sp-keystore]
 git = 'https://github.com/paritytech/substrate.git'
 branch = 'rococo-v1'
