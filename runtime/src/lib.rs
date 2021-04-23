@@ -23,8 +23,17 @@ use sp_api::impl_runtime_apis;
 use sp_runtime::SaturatedConversion;
 use fp_rpc::TransactionStatus;
 
-// XCM imports
+// Polkadot imports
+use polkadot_parachain::primitives::Sibling;
 use xcm::v0::{Junction, MultiLocation, NetworkId};
+use xcm_builder::{
+	AccountId32Aliases, CurrencyAdapter, LocationInverter, ParentIsDefault, RelayChainAsNative,
+	SiblingParachainAsNative, SiblingParachainConvertsVia, SignedAccountId32AsNative,
+	SovereignSignedViaLocation, FixedRateOfConcreteFungible, EnsureXcmOrigin,
+	AllowTopLevelPaidExecutionFrom, TakeWeightCredit, FixedWeightBounds, IsConcrete, NativeAsset,
+	AllowUnpaidExecutionFrom, ParentAsSuperuser,
+};
+use xcm_executor::{Config, XcmExecutor};
 
 use frame_system::limits::{BlockLength, BlockWeights};
 use frame_system::{EnsureNever, EnsureRoot, EnsureSigned};
@@ -202,6 +211,25 @@ impl pallet_sudo::Config for Runtime {
 	type Call = Call;
 }
 
+parameter_types! {
+	pub const ReservedXcmpWeight: Weight = MAXIMUM_BLOCK_WEIGHT / 4;
+}
+
+impl cumulus_pallet_parachain_system::Config for Runtime {
+	type Event = Event;
+	type OnValidationData = ();
+	type SelfParaId = parachain_info::Pallet<Runtime>;
+	type DownwardMessageHandlers = cumulus_primitives_utility::UnqueuedDmpAsParent<
+		MaxDownwardMessageWeight,
+		XcmExecutor<XcmConfig>,
+		Call,
+	>;
+	type OutboundXcmpMessageSource = XcmpQueue;
+	type XcmpMessageHandler = XcmpQueue;
+	type ReservedXcmpWeight = ReservedXcmpWeight;
+}
+
+/*
 impl cumulus_pallet_parachain_system::Config for Runtime {
 	type SelfParaId = parachain_info::Pallet<Runtime>;
         type Event = Event;
@@ -211,6 +239,7 @@ impl cumulus_pallet_parachain_system::Config for Runtime {
         type XcmpMessageHandler = ();
         type ReservedXcmpWeight = ();
 }
+*/
 
 
 impl parachain_info::Config for Runtime {}
@@ -432,12 +461,88 @@ impl pallet_ethereum::Config for Runtime {
 parameter_types! {
 	pub const RococoLocation: MultiLocation = MultiLocation::X1(Junction::Parent);
 	pub const RococoNetwork: NetworkId = NetworkId::Polkadot;
+	pub RelayChainOrigin: Origin = cumulus_pallet_xcm::Origin::Relay.into();
 	pub Ancestry: MultiLocation = Junction::Parachain {
 		id: ParachainInfo::parachain_id().into()
 	}.into();
 }
 
+pub type LocationToAccountId = (
+	ParentIsDefault<AccountId>,
+	SiblingParachainConvertsVia<Sibling, AccountId>,
+	AccountId32Aliases<RococoNetwork, AccountId>,
+);
+
+pub type LocalAssetTransactor = CurrencyAdapter<
+	Balances,
+	IsConcrete<RococoLocation>,
+	LocationToAccountId,
+	AccountId,
+>;
+
+pub type XcmOriginToTransactDispatchOrigin = (
+	SovereignSignedViaLocation<LocationToAccountId, Origin>,
+	RelayChainAsNative<RelayChainOrigin, Origin>,
+	SiblingParachainAsNative<cumulus_pallet_xcm::Origin, Origin>,
+	ParentAsSuperuser<Origin>,
+	SignedAccountId32AsNative<RococoNetwork, Origin>,
+);
+
+parameter_types! {
+	pub UnitWeightCost: Weight = 1_000;
+}
+
+parameter_types! {
+	pub const WeightPrice: (MultiLocation, u128) = (MultiLocation::X1(Junction::Parent), 1_000);
+	pub AllowUnpaidFrom: Vec<MultiLocation> = vec![ MultiLocation::X1(Junction::Parent) ];
+}
+
+pub type Barrier = (
+	TakeWeightCredit,
+	AllowTopLevelPaidExecutionFrom<All<MultiLocation>>,
+	AllowUnpaidExecutionFrom<IsInVec<AllowUnpaidFrom>>,	// <- Parent gets free execution
+);
+
+pub struct XcmConfig;
+impl Config for XcmConfig {
+	type Call = Call;
+	type XcmSender = XcmRouter;
+	type AssetTransactor = LocalAssetTransactor;
+	type OriginConverter = XcmOriginToTransactDispatchOrigin;
+	type IsReserve = NativeAsset;
+	type IsTeleporter = NativeAsset;	// <- should be enough to allow teleportation of ROC
+	type LocationInverter = LocationInverter<Ancestry>;
+	type Barrier = Barrier;
+	type Weigher = FixedWeightBounds<UnitWeightCost, Call>;
+	type Trader = FixedRateOfConcreteFungible<WeightPrice>;
+	type ResponseHandler = ();	// Don't handle responses for now.
+}
+
+parameter_types! {
+	pub const MaxDownwardMessageWeight: Weight = MAXIMUM_BLOCK_WEIGHT / 10;
+}
+
+pub type LocalOriginToLocation = ();
+pub type XcmRouter = (
+	cumulus_primitives_utility::ParentAsUmp<ParachainSystem>,
+	XcmpQueue,
+);
+
+impl pallet_xcm::Config for Runtime {
+	type Event = Event;
+	type SendXcmOrigin = EnsureXcmOrigin<Origin, LocalOriginToLocation>;
+	type XcmRouter = XcmRouter;
+	type ExecuteXcmOrigin = EnsureXcmOrigin<Origin, LocalOriginToLocation>;
+	type XcmExecutor = XcmExecutor<XcmConfig>;
+}
+
 impl cumulus_pallet_xcm::Config for Runtime {}
+
+impl cumulus_pallet_xcmp_queue::Config for Runtime {
+	type Event = Event;
+	type XcmExecutor = XcmExecutor<XcmConfig>;
+	type ChannelInfo = ParachainSystem;
+}
 
 impl template::Config for Runtime {
 	type Event = Event;
@@ -524,6 +629,10 @@ construct_runtime!(
 		TransactionPayment: pallet_transaction_payment::{Pallet, Storage},
 		ParachainInfo: parachain_info::{Pallet, Storage, Config},
 		TemplateModule: template::{Pallet, Call, Storage, Event<T>},
+
+                XcmpQueue: cumulus_pallet_xcmp_queue::{Pallet, Call, Storage, Event<T>},
+		PolkadotXcm: pallet_xcm::{Pallet, Call, Event<T>, Origin},
+		CumulusXcm: cumulus_pallet_xcm::{Pallet, Origin},
 
 		Gateway: gateway::{Pallet, Call, Storage, Event<T>, ValidateUnsigned},
                 Scheduler: pallet_scheduler::{Pallet, Storage, Config, Event<T>, Call},

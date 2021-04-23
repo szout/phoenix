@@ -263,6 +263,21 @@ git = 'https://github.com/paritytech/cumulus.git'
 branch = 'rococo-v1'
 default-features = false
 
+[dependencies.cumulus-pallet-xcmp-queue]
+git = 'https://github.com/paritytech/cumulus.git'
+branch = 'rococo-v1'
+default-features = false
+
+[dependencies.cumulus-primitives-utility]
+git = 'https://github.com/paritytech/cumulus.git'
+branch = 'rococo-v1'
+default-features = false
+
+[dependencies.pallet-xcm]
+git = 'https://github.com/paritytech/polkadot'
+branch = 'rococo-v1'
+default-features = false
+
 #---------------------------------------------
 # Polkadot dependencies
 #---------------------------------------------
@@ -331,10 +346,14 @@ std = [
         "pallet-contracts/std",
         "pallet-contracts-primitives/std",
         "pallet-contracts-rpc-runtime-api/std",
-	"cumulus-pallet-parachain-system/std",
-	"cumulus-primitives-core/std",
-	"xcm/std",
-	"xcm-builder/std",
-	"xcm-executor/std",
+        "cumulus-pallet-parachain-system/std",
+        "cumulus-primitives-core/std",
+        "xcm/std",
+        "xcm-builder/std",
+        "xcm-executor/std",
+        "cumulus-pallet-xcm/std",
+        "cumulus-pallet-xcmp-queue/std",
+        "cumulus-primitives-utility/std",
+
 
 ]
